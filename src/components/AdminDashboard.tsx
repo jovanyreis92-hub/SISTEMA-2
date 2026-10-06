@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EventItem, Participant, CheckInLog } from '../types';
 import { BadgeModal } from './BadgeModal';
 import { EditParticipantModal } from './EditParticipantModal';
 import { ManageEventsModal } from './ManageEventsModal';
+import { EventQrModal } from './EventQrModal';
 import { recordCheckIn } from '../utils/storage';
 import {
   Users,
@@ -31,6 +32,7 @@ interface AdminDashboardProps {
   onOpenRegistration?: () => void;
   onOpenReports?: () => void;
   onOpenNewEventModal: () => void;
+  onOpenEditEventModal?: (event: EventItem) => void;
   onOpenLayoutModal: () => void;
   onOpenExcelPdfModal: () => void;
   onSelectEvent?: (id: string) => void;
@@ -48,6 +50,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   participants,
   logs: _logs,
   onOpenNewEventModal,
+  onOpenEditEventModal,
   onOpenLayoutModal,
   onOpenExcelPdfModal,
   onSelectEvent,
@@ -66,6 +69,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleteEventConfirmOpen, setIsDeleteEventConfirmOpen] = useState(false);
   const [isManageEventsModalOpen, setIsManageEventsModalOpen] = useState(false);
+  const [isEventQrModalOpen, setIsEventQrModalOpen] = useState(false);
+  const [qrModalEvent, setQrModalEvent] = useState<EventItem | null>(null);
+
+  // Keyboard shortcut listener:
+  // Key 'e' or 'E': Tecla de Edição de Evento
+  // Key 'q' or 'Q': Código QR do Evento
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if ((e.key === 'e' || e.key === 'E') && onOpenEditEventModal) {
+        e.preventDefault();
+        onOpenEditEventModal(event);
+      }
+
+      if (e.key === 'q' || e.key === 'Q') {
+        e.preventDefault();
+        setQrModalEvent(event);
+        setIsEventQrModalOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [event, onOpenEditEventModal]);
 
   // Filter participants for active event
   const eventParticipants = participants.filter(p => p.eventId === event.id);
@@ -173,7 +210,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ShieldCheck className="w-4 h-4" />
             <span>Painel de Controle Administrativo</span>
           </div>
-          <h1 className="text-xl font-extrabold text-white">{event.title}</h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl font-extrabold text-white">{event.title}</h1>
+            {onOpenEditEventModal && (
+              <button
+                type="button"
+                onClick={() => onOpenEditEventModal(event)}
+                className="px-2.5 py-1 bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/80 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+                title="Editar este evento cadastrado (Tecla de Edição de Evento: pressione 'E')"
+              >
+                <Pencil className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Editar Evento</span>
+                <kbd className="px-1.5 py-0.2 bg-slate-900 border border-slate-700 rounded text-[9px] text-slate-400 font-mono">
+                  E
+                </kbd>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setQrModalEvent(event);
+                setIsEventQrModalOpen(true);
+              }}
+              className="px-2.5 py-1 bg-blue-950/70 hover:bg-blue-900 text-blue-300 border border-blue-700/80 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+              title="Criar / Visualizar Código QR deste Evento (pressione 'Q')"
+            >
+              <QrCode className="w-3.5 h-3.5 text-blue-400" />
+              <span>Código QR</span>
+              <kbd className="px-1.5 py-0.2 bg-slate-900 border border-slate-700 rounded text-[9px] text-slate-400 font-mono">
+                Q
+              </kbd>
+            </button>
+          </div>
           <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-1.5">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-slate-500" />
@@ -204,6 +273,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <Plus className="w-4 h-4" />
             <span>Novo Evento</span>
           </button>
+
+          {/* CRIAR CÓDIGO QR DO EVENTO */}
+          <button
+            onClick={() => {
+              setQrModalEvent(event);
+              setIsEventQrModalOpen(true);
+            }}
+            className="px-3.5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-950 flex items-center gap-2 transition-all"
+            title="Criar / Exibir Código QR do Evento para inscrição, credenciamento e impressão de cartaz"
+          >
+            <QrCode className="w-4 h-4" />
+            <span>Código QR do Evento</span>
+          </button>
+
+          {/* TECLA DE EDIÇÃO DE EVENTO APÓS CADASTRADO */}
+          {onOpenEditEventModal && (
+            <button
+              onClick={() => onOpenEditEventModal(event)}
+              className="px-3.5 py-2.5 bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-800/80 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors shadow-sm"
+              title="Tecla de Edição de Evento Cadastrado (Pressione 'E' no teclado ou clique aqui para editar Nome, Local, Horário, Vagas)"
+            >
+              <Pencil className="w-4 h-4 text-cyan-400" />
+              <span>Editar Evento</span>
+              <span className="px-1.5 py-0.5 bg-cyan-900/60 border border-cyan-700/60 rounded text-[9px] font-mono text-cyan-200">
+                Tecla E
+              </span>
+            </button>
+          )}
 
           <button
             onClick={() => setIsManageEventsModalOpen(true)}
@@ -600,12 +697,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           if (onSelectEvent) onSelectEvent(id);
           setIsManageEventsModalOpen(false);
         }}
+        onEditEvent={(evt) => {
+          if (onOpenEditEventModal) onOpenEditEventModal(evt);
+        }}
+        onOpenEventQrModal={(evt) => {
+          setQrModalEvent(evt);
+          setIsEventQrModalOpen(true);
+        }}
         onDeleteEvent={(id) => {
           if (onDeleteEvent) onDeleteEvent(id);
         }}
         onClearPreviousEvents={onClearPreviousEvents}
         onOpenNewEventModal={onOpenNewEventModal}
       />
+
+      {/* Event QR Code Modal (Criar / Ver Código QR do Evento) */}
+      {isEventQrModalOpen && (
+        <EventQrModal
+          isOpen={isEventQrModalOpen}
+          event={qrModalEvent || event}
+          onClose={() => {
+            setIsEventQrModalOpen(false);
+            setQrModalEvent(null);
+          }}
+          onEditEvent={(evt) => {
+            setIsEventQrModalOpen(false);
+            if (onOpenEditEventModal) onOpenEditEventModal(evt);
+          }}
+        />
+      )}
 
       {/* Delete Current Event Confirmation Modal */}
       {isDeleteEventConfirmOpen && (

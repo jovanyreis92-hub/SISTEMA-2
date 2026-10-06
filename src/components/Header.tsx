@@ -8,6 +8,8 @@ import {
   LogOut,
   ShieldCheck,
   Trash2,
+  Pencil,
+  QrCode,
 } from 'lucide-react';
 import { EventItem, AppBranding } from '../types';
 
@@ -20,6 +22,8 @@ interface HeaderProps {
   onOpenNewEventModal?: () => void;
   onOpenLayoutModal?: () => void;
   onOpenExcelPdfModal?: () => void;
+  onEditEvent?: (event: EventItem) => void;
+  onOpenEventQrModal?: (event: EventItem) => void;
   onDeleteEvent?: (id: string) => void;
   isAdmin: boolean;
   onOpenAdminLogin: (intendedView?: 'dashboard' | 'kiosk' | 'register' | 'reports') => void;
@@ -33,6 +37,8 @@ export const Header: React.FC<HeaderProps> = ({
   events,
   activeEventId,
   onSelectEvent,
+  onEditEvent,
+  onOpenEventQrModal,
   onDeleteEvent,
   isAdmin,
   onOpenAdminLogin,
@@ -94,6 +100,32 @@ export const Header: React.FC<HeaderProps> = ({
                   </option>
                 ))}
               </select>
+              {onOpenEventQrModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const evt = events.find(e => e.id === activeEventId);
+                    if (evt) onOpenEventQrModal(evt);
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition-colors"
+                  title="Criar / Ver Código QR do Evento"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {onEditEvent && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const evt = events.find(e => e.id === activeEventId);
+                    if (evt) onEditEvent(evt);
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition-colors"
+                  title="Editar evento ativo (Tecla de Edição de Evento)"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
               {onDeleteEvent && (
                 <button
                   type="button"

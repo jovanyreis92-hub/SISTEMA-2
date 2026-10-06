@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   FolderX,
+  Pencil,
+  QrCode,
 } from 'lucide-react';
 
 interface ManageEventsModalProps {
@@ -19,6 +21,8 @@ interface ManageEventsModalProps {
   activeEventId: string;
   participants: Participant[];
   onSelectEvent: (id: string) => void;
+  onEditEvent?: (event: EventItem) => void;
+  onOpenEventQrModal?: (event: EventItem) => void;
   onDeleteEvent: (id: string) => void;
   onClearPreviousEvents?: () => void;
   onOpenNewEventModal: () => void;
@@ -31,6 +35,8 @@ export const ManageEventsModal: React.FC<ManageEventsModalProps> = ({
   activeEventId,
   participants,
   onSelectEvent,
+  onEditEvent,
+  onOpenEventQrModal,
   onDeleteEvent,
   onClearPreviousEvents,
   onOpenNewEventModal,
@@ -179,6 +185,36 @@ export const ManageEventsModal: React.FC<ManageEventsModalProps> = ({
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0">
+                      {onOpenEventQrModal && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            onOpenEventQrModal(evt);
+                          }}
+                          className="px-3 py-1.5 bg-blue-950/70 hover:bg-blue-900/80 text-blue-300 border border-blue-800/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                          title={`Criar / Ver Código QR do Evento "${evt.title}"`}
+                        >
+                          <QrCode className="w-3.5 h-3.5 text-blue-400" />
+                          <span>QR Code</span>
+                        </button>
+                      )}
+
+                      {onEditEvent && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            onEditEvent(evt);
+                          }}
+                          className="px-3 py-1.5 bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-800/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                          title={`Editar dados do evento "${evt.title}" (Tecla de Edição)`}
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Editar</span>
+                        </button>
+                      )}
+
                       {!isActive && (
                         <button
                           type="button"

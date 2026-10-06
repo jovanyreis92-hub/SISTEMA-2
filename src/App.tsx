@@ -25,6 +25,7 @@ import { FacialKiosk } from './components/FacialKiosk';
 import { RegistrationPortal } from './components/RegistrationPortal';
 import { ReportsView } from './components/ReportsView';
 import { EventModal } from './components/EventModal';
+import { EventQrModal } from './components/EventQrModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { LayoutSettingsModal } from './components/LayoutSettingsModal';
 import { ExcelPdfModal } from './components/ExcelPdfModal';
@@ -59,6 +60,21 @@ export default function App() {
   const [logs, setLogs] = useState<CheckInLog[]>(() => loadLogs());
 
   const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
+  const [isEventQrModalOpen, setIsEventQrModalOpen] = useState(false);
+  const [qrModalEvent, setQrModalEvent] = useState<EventItem | null>(null);
+
+  // Check URL query parameters for direct event QR link (e.g., ?event=evt-123)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const eventParam = params.get('event');
+      if (eventParam && events.some(e => e.id === eventParam)) {
+        setActiveEventId(eventParam);
+        setActiveView('register');
+      }
+    }
+  }, [events]);
 
   // Save changes to storage
   useEffect(() => {
@@ -85,6 +101,15 @@ export default function App() {
     setEvents(prev => [newEvent, ...prev]);
     setActiveEventId(newEvent.id);
     setActiveView('dashboard');
+  };
+
+  // Handler for updating an existing event (Tecla de Edição)
+  const handleUpdateEvent = (updatedEvent: EventItem) => {
+    setEvents(prev => prev.map(e => (e.id === updatedEvent.id ? updatedEvent : e)));
+  };
+
+  const handleOpenEditEventModal = (eventToEdit: EventItem) => {
+    setEditingEvent(eventToEdit);
   };
 
   // Handler for successful registration
@@ -304,8 +329,16 @@ export default function App() {
         events={events}
         activeEventId={activeEventId}
         onSelectEvent={setActiveEventId}
+        onEditEvent={handleOpenEditEventModal}
+        onOpenEventQrModal={(evt) => {
+          setQrModalEvent(evt);
+          setIsEventQrModalOpen(true);
+        }}
         onDeleteEvent={handleDeleteEvent}
-        onOpenNewEventModal={() => setIsNewEventModalOpen(true)}
+        onOpenNewEventModal={() => {
+          setEditingEvent(null);
+          setIsNewEventModalOpen(true);
+        }}
         onOpenLayoutModal={() => setIsLayoutModalOpen(true)}
         onOpenExcelPdfModal={() => setIsExcelPdfModalOpen(true)}
         isAdmin={isAdmin}
@@ -364,7 +397,11 @@ export default function App() {
             onOpenKiosk={() => setActiveView('kiosk')}
             onOpenRegistration={() => setActiveView('register')}
             onOpenReports={() => setActiveView('reports')}
-            onOpenNewEventModal={() => setIsNewEventModalOpen(true)}
+            onOpenNewEventModal={() => {
+              setEditingEvent(null);
+              setIsNewEventModalOpen(true);
+            }}
+            onOpenEditEventModal={handleOpenEditEventModal}
             onOpenLayoutModal={() => setIsLayoutModalOpen(true)}
             onOpenExcelPdfModal={() => setIsExcelPdfModalOpen(true)}
             onSelectEvent={setActiveEventId}
@@ -415,12 +452,44 @@ export default function App() {
         onImportParticipants={handleBatchImportParticipants}
       />
 
-      {/* New Event Modal */}
+      {/* Event Modal (Novo Evento ou Edição de Evento Cadastrado) */}
       <EventModal
-        isOpen={isNewEventModalOpen}
-        onClose={() => setIsNewEventModalOpen(false)}
-        onSave={handleSaveNewEvent}
+        isOpen={isNewEventModalOpen || !!editingEvent}
+        eventToEdit={editingEvent}
+        onOpenQrCode={(evt) => {
+          setQrModalEvent(evt);
+          setIsEventQrModalOpen(true);
+        }}
+        onClose={() => {
+          setIsNewEventModalOpen(false);
+          setEditingEvent(null);
+        }}
+        onSave={(savedEvent) => {
+          if (editingEvent) {
+            handleUpdateEvent(savedEvent);
+          } else {
+            handleSaveNewEvent(savedEvent);
+          }
+          setIsNewEventModalOpen(false);
+          setEditingEvent(null);
+        }}
       />
+
+      {/* Event QR Code Modal (Criar / Ver Código QR do Evento) */}
+      {isEventQrModalOpen && (
+        <EventQrModal
+          isOpen={isEventQrModalOpen}
+          event={qrModalEvent || currentEvent}
+          onClose={() => {
+            setIsEventQrModalOpen(false);
+            setQrModalEvent(null);
+          }}
+          onEditEvent={(evt) => {
+            setIsEventQrModalOpen(false);
+            handleOpenEditEventModal(evt);
+          }}
+        />
+      )}
     </div>
   );
 }

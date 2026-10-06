@@ -3,6 +3,7 @@ import { EventItem, Participant } from '../types';
 import { extractFaceFeatures } from '../utils/faceEngine';
 import { createAvatarDataUrl } from '../utils/mockData';
 import { BadgeModal } from './BadgeModal';
+import { EventQrModal } from './EventQrModal';
 import {
   Camera,
   CheckCircle2,
@@ -16,6 +17,7 @@ import {
   RefreshCw,
   ScanFace,
   Upload,
+  QrCode,
 } from 'lucide-react';
 
 interface RegistrationPortalProps {
@@ -51,6 +53,7 @@ export const RegistrationPortal: React.FC<RegistrationPortalProps> = ({
   // Newly created participant for badge view
   const [registeredParticipant, setRegisteredParticipant] = useState<Participant | null>(null);
   const [showBadge, setShowBadge] = useState(false);
+  const [showEventQrModal, setShowEventQrModal] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -336,6 +339,28 @@ export const RegistrationPortal: React.FC<RegistrationPortalProps> = ({
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6 animate-fade-in">
+      {/* Top Bar with Event Title & QR Code Access */}
+      <div className="flex items-center justify-between gap-3 pb-1 border-b border-slate-800/80">
+        <div>
+          <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
+            Portal de Inscrição & Credenciamento
+          </h1>
+          <p className="text-xs text-slate-400">
+            Cadastre sua biometria facial para acesso rápido à portaria
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowEventQrModal(true)}
+          className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-950 flex items-center gap-1.5 transition-all"
+          title="Ver e compartilhar o Código QR deste evento"
+        >
+          <QrCode className="w-3.5 h-3.5" />
+          <span>Código QR do Evento</span>
+        </button>
+      </div>
+
       {/* Status Alert: Countdown / Closed (se aplicável) */}
       {isBeforeOpen && (
         <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-800/60 flex items-center gap-3 text-blue-200">
@@ -553,30 +578,6 @@ export const RegistrationPortal: React.FC<RegistrationPortalProps> = ({
             </p>
           </div>
 
-          {/* Dados do Evento Vinculados ao Participante */}
-          <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2 text-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-0.5">
-                <span className="text-[11px] font-semibold text-slate-400 block">Evento:</span>
-                <span className="font-bold text-white text-xs block truncate" title={event.title}>
-                  {event.title}
-                </span>
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[11px] font-semibold text-slate-400 block">Local do Evento:</span>
-                <span className="font-semibold text-slate-200 text-xs block truncate" title={event.description}>
-                  {event.description || 'Centro de Eventos Principal'}
-                </span>
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[11px] font-semibold text-amber-400 block">Prato do Dia:</span>
-                <span className="font-bold text-amber-300 text-xs block truncate" title={event.location}>
-                  {event.location || 'Menu Especial do Dia'}
-                </span>
-              </div>
-            </div>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Duplicate or Validation Error Alert */}
             {duplicateError && (
@@ -690,6 +691,15 @@ export const RegistrationPortal: React.FC<RegistrationPortalProps> = ({
           participant={registeredParticipant}
           event={event}
           onClose={() => setShowBadge(false)}
+        />
+      )}
+
+      {/* Event QR Code Modal */}
+      {showEventQrModal && (
+        <EventQrModal
+          isOpen={showEventQrModal}
+          event={event}
+          onClose={() => setShowEventQrModal(false)}
         />
       )}
     </div>
