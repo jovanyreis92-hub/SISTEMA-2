@@ -12,7 +12,6 @@ import {
   MapPin,
   Pencil,
   Share2,
-  ExternalLink,
   Sparkles,
 } from 'lucide-react';
 
@@ -29,10 +28,8 @@ export const EventQrModal: React.FC<EventQrModalProps> = ({
   onClose,
   onEditEvent,
 }) => {
-  const [qrMode, setQrMode] = useState<'url' | 'token'>('url');
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedToken, setCopiedToken] = useState(false);
   const printableRef = useRef<HTMLDivElement>(null);
 
   // Direct registration URL for this event
@@ -43,13 +40,11 @@ export const EventQrModal: React.FC<EventQrModalProps> = ({
     return `${origin}${pathname}?event=${encodeURIComponent(event.id)}`;
   };
 
-  const eventToken = `EVENT:${event.id}:${encodeURIComponent(event.title)}`;
-  const currentPayload = qrMode === 'url' ? getRegistrationUrl() : eventToken;
-
   useEffect(() => {
     if (!isOpen || !event) return;
 
-    QRCode.toDataURL(currentPayload, {
+    const registrationUrl = getRegistrationUrl();
+    QRCode.toDataURL(registrationUrl, {
       width: 480,
       margin: 2,
       color: {
@@ -60,7 +55,7 @@ export const EventQrModal: React.FC<EventQrModalProps> = ({
     })
       .then(url => setQrDataUrl(url))
       .catch(err => console.error('Erro ao gerar QR Code do Evento:', err));
-  }, [isOpen, event, qrMode, currentPayload]);
+  }, [isOpen, event]);
 
   if (!isOpen) return null;
 
@@ -70,15 +65,6 @@ export const EventQrModal: React.FC<EventQrModalProps> = ({
       navigator.clipboard.writeText(url).then(() => {
         setCopiedLink(true);
         setTimeout(() => setCopiedLink(false), 2500);
-      });
-    }
-  };
-
-  const handleCopyToken = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(eventToken).then(() => {
-        setCopiedToken(true);
-        setTimeout(() => setCopiedToken(false), 2500);
       });
     }
   };
@@ -255,34 +241,11 @@ export const EventQrModal: React.FC<EventQrModalProps> = ({
           </button>
         </div>
 
-        {/* Mode Selector */}
-        <div className="px-6 pt-4 pb-2 bg-slate-950/40 border-b border-slate-800 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-medium">Tipo do QR:</span>
-            <div className="inline-flex rounded-lg bg-slate-900 p-0.5 border border-slate-800">
-              <button
-                type="button"
-                onClick={() => setQrMode('url')}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                  qrMode === 'url'
-                    ? 'bg-cyan-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Link de Inscrição (Celular)
-              </button>
-              <button
-                type="button"
-                onClick={() => setQrMode('token')}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                  qrMode === 'token'
-                    ? 'bg-cyan-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Token do Totem
-              </button>
-            </div>
+        {/* Info & Quick Edit Bar */}
+        <div className="px-6 py-3 bg-slate-950/40 border-b border-slate-800 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-medium text-slate-300">Link Direto para Inscrição & Credenciamento Facial</span>
           </div>
 
           {onEditEvent && (
