@@ -76,6 +76,51 @@ export default function App() {
     }
   }, [events]);
 
+  // Tecla ESC para fechar abas/modais abertos
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isEventQrModalOpen) {
+          e.preventDefault();
+          setIsEventQrModalOpen(false);
+          setQrModalEvent(null);
+          return;
+        }
+        if (isNewEventModalOpen || editingEvent) {
+          e.preventDefault();
+          setIsNewEventModalOpen(false);
+          setEditingEvent(null);
+          return;
+        }
+        if (isExcelPdfModalOpen) {
+          e.preventDefault();
+          setIsExcelPdfModalOpen(false);
+          return;
+        }
+        if (isLayoutModalOpen) {
+          e.preventDefault();
+          setIsLayoutModalOpen(false);
+          return;
+        }
+        if (isAdminLoginOpen) {
+          e.preventDefault();
+          setIsAdminLoginOpen(false);
+          setPendingViewAfterLogin(null);
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    isEventQrModalOpen,
+    isNewEventModalOpen,
+    editingEvent,
+    isExcelPdfModalOpen,
+    isLayoutModalOpen,
+    isAdminLoginOpen,
+  ]);
+
   // Save changes to storage
   useEffect(() => {
     saveEvents(events);

@@ -45,6 +45,19 @@ export const EditParticipantModal: React.FC<EditParticipantModalProps> = ({
     }
   }, [participant]);
 
+  // Tecla ESC para fechar modal de edição
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !participant) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -141,8 +154,10 @@ export const EditParticipantModal: React.FC<EditParticipantModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors"
+            className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors flex items-center gap-1.5"
+            title="Fechar (Tecla ESC)"
           >
+            <span className="hidden sm:inline text-[10px] font-mono text-slate-400 px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">ESC</span>
             <X className="w-4 h-4" />
           </button>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Lock, KeyRound, User, X, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { playAccessGrantedSound, playAccessDeniedSound } from '../utils/soundEffects';
 
@@ -17,6 +17,19 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Tecla ESC para fechar modal de login
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -55,8 +68,10 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors"
+            className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors flex items-center gap-1.5"
+            title="Fechar (Tecla ESC)"
           >
+            <span className="text-[10px] font-mono text-slate-400 px-1 py-0.5 bg-slate-800 rounded border border-slate-700">ESC</span>
             <X className="w-4 h-4" />
           </button>
         </div>

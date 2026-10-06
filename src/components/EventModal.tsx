@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { EventItem, EventCategory } from '../types';
-import { X, Calendar, Clock, MapPin, Users, ShieldAlert, Pencil, Save, Utensils, QrCode } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Pencil, Save, Utensils, QrCode } from 'lucide-react';
 import { notificationService } from '../utils/notificationService';
 
 interface EventModalProps {
@@ -60,6 +60,19 @@ export const EventModal: React.FC<EventModalProps> = ({
       setTotalCapacity(200);
     }
   }, [eventToEdit, isOpen]);
+
+  // Tecla ESC para fechar modal de evento
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -186,8 +199,10 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+            title="Fechar (Tecla ESC)"
           >
+            <span className="hidden sm:inline text-[10px] font-mono text-slate-400 px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">ESC</span>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -295,46 +310,6 @@ export const EventModal: React.FC<EventModalProps> = ({
                   Bloqueia novas entradas
                 </span>
               </div>
-            </div>
-          </div>
-
-          {/* Total Capacity & Automated Vacancy Closure */}
-          <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-3">
-            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-cyan-400" />
-              Capacidade de Vagas & Encerramento Automatizado
-            </h3>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                Limite Total de Vagas Disponíveis *
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="1"
-                  max="50000"
-                  required
-                  value={totalCapacity}
-                  onChange={e => setTotalCapacity(Number(e.target.value))}
-                  placeholder="Ex: 200"
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                />
-              </div>
-              <span className="text-[11px] text-slate-500 mt-1 block">
-                O sistema encerrará as inscrições automaticamente assim que o total de inscritos atingir essa capacidade.
-              </span>
-            </div>
-          </div>
-
-          {/* Automated rules notice */}
-          <div className="p-3 bg-amber-950/20 border border-amber-800/40 rounded-lg flex items-start gap-2 text-xs text-amber-300">
-            <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
-            <div>
-              <span className="font-semibold">Regras Automáticas do Sistema:</span>
-              <p className="text-[11px] text-amber-200/80 mt-0.5 leading-relaxed">
-                As vagas fecham no exato instante em que atingirem a capacidade configurada ou quando atingir a data limite. O sistema dispara uma notificação push a cada encerramento.
-              </p>
             </div>
           </div>
 

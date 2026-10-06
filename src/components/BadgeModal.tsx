@@ -35,6 +35,18 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ participant, event, onCl
       .catch(err => console.error('Error generating QR code', err));
   }, [participant, event]);
 
+  // Tecla ESC para fechar crachá
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handlePrint = () => {
     window.print();
   };
@@ -52,8 +64,10 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ participant, event, onCl
           </span>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+            title="Fechar (Tecla ESC)"
           >
+            <span className="text-[10px] font-mono text-slate-400 px-1 py-0.5 bg-slate-800 rounded border border-slate-700">ESC</span>
             <X className="w-4 h-4" />
           </button>
         </div>

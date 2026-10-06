@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppBranding } from '../types';
 import { X, Image as ImageIcon, Palette, Sparkles, Check, RefreshCw, Upload } from 'lucide-react';
 import { notificationService } from '../utils/notificationService';
@@ -20,6 +20,19 @@ export const LayoutSettingsModal: React.FC<LayoutSettingsModalProps> = ({
   const [subtitle, setSubtitle] = useState(branding.subtitle);
   const [primaryColor, setPrimaryColor] = useState<AppBranding['primaryColor']>(branding.primaryColor);
   const [logoUrl, setLogoUrl] = useState<string | undefined>(branding.logoUrl);
+
+  // Tecla ESC para fechar modal de layout
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -86,8 +99,10 @@ export const LayoutSettingsModal: React.FC<LayoutSettingsModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+            title="Fechar (Tecla ESC)"
           >
+            <span className="hidden sm:inline text-[10px] font-mono text-slate-400 px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">ESC</span>
             <X className="w-5 h-5" />
           </button>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EventItem, EventCategory } from '../types';
 import { X, Plus, Trash2, Edit2, Check, AlertCircle, Users } from 'lucide-react';
 import { notificationService } from '../utils/notificationService';
@@ -26,6 +26,19 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const [newPrice, setNewPrice] = useState('Gratuito');
   const [newColor, setNewColor] = useState('#06b6d4');
   const [newDescription, setNewDescription] = useState('');
+
+  // Tecla ESC para fechar modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

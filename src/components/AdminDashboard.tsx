@@ -67,16 +67,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isDeleteEventConfirmOpen, setIsDeleteEventConfirmOpen] = useState(false);
   const [isManageEventsModalOpen, setIsManageEventsModalOpen] = useState(false);
   const [isEventQrModalOpen, setIsEventQrModalOpen] = useState(false);
   const [qrModalEvent, setQrModalEvent] = useState<EventItem | null>(null);
 
   // Keyboard shortcut listener:
+  // Tecla ESC: Fecha qualquer aba ou modal aberto no painel de controle
   // Key 'e' or 'E': Tecla de Edição de Evento
   // Key 'q' or 'Q': Código QR do Evento
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Tecla ESC: Prioridade máxima para fechar abas/modais abertos
+      if (e.key === 'Escape') {
+        if (isDeleteConfirmOpen) {
+          e.preventDefault();
+          setIsDeleteConfirmOpen(false);
+          return;
+        }
+        if (isEventQrModalOpen) {
+          e.preventDefault();
+          setIsEventQrModalOpen(false);
+          setQrModalEvent(null);
+          return;
+        }
+        if (isManageEventsModalOpen) {
+          e.preventDefault();
+          setIsManageEventsModalOpen(false);
+          return;
+        }
+        if (editingParticipant) {
+          e.preventDefault();
+          setEditingParticipant(null);
+          return;
+        }
+        if (activeBadgeParticipant) {
+          e.preventDefault();
+          setActiveBadgeParticipant(null);
+          return;
+        }
+        if (selectedParticipantIds.length > 0) {
+          e.preventDefault();
+          setSelectedParticipantIds([]);
+          return;
+        }
+        if (searchTerm) {
+          e.preventDefault();
+          setSearchTerm('');
+          return;
+        }
+      }
+
       const target = e.target as HTMLElement;
       if (
         target &&
@@ -102,15 +142,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [event, onOpenEditEventModal]);
+  }, [
+    event,
+    onOpenEditEventModal,
+    isDeleteConfirmOpen,
+    isEventQrModalOpen,
+    isManageEventsModalOpen,
+    editingParticipant,
+    activeBadgeParticipant,
+    selectedParticipantIds,
+    searchTerm,
+  ]);
 
   // Filter participants for active event
   const eventParticipants = participants.filter(p => p.eventId === event.id);
   const totalRegistered = eventParticipants.length;
   const checkedInCount = eventParticipants.filter(p => p.status === 'checked_in').length;
+  const absentCount = Math.max(0, totalRegistered - checkedInCount);
   const remainingTotalSpots = Math.max(0, event.totalCapacity - totalRegistered);
   const occupancyRate = event.totalCapacity > 0 ? Math.round((totalRegistered / event.totalCapacity) * 100) : 0;
   const attendanceRate = totalRegistered > 0 ? Math.round((checkedInCount / totalRegistered) * 100) : 0;
+  const absentRate = totalRegistered > 0 ? Math.round((absentCount / totalRegistered) * 100) : 0;
 
   // Filter table rows
   const filteredParticipants = eventParticipants.filter(p => {
@@ -210,38 +262,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ShieldCheck className="w-4 h-4" />
             <span>Painel de Controle Administrativo</span>
           </div>
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div>
             <h1 className="text-xl font-extrabold text-white">{event.title}</h1>
-            {onOpenEditEventModal && (
-              <button
-                type="button"
-                onClick={() => onOpenEditEventModal(event)}
-                className="px-2.5 py-1 bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/80 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
-                title="Editar este evento cadastrado (Tecla de Edição de Evento: pressione 'E')"
-              >
-                <Pencil className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Editar Evento</span>
-                <kbd className="px-1.5 py-0.2 bg-slate-900 border border-slate-700 rounded text-[9px] text-slate-400 font-mono">
-                  E
-                </kbd>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setQrModalEvent(event);
-                setIsEventQrModalOpen(true);
-              }}
-              className="px-2.5 py-1 bg-blue-950/70 hover:bg-blue-900 text-blue-300 border border-blue-700/80 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
-              title="Criar / Visualizar Código QR deste Evento (pressione 'Q')"
-            >
-              <QrCode className="w-3.5 h-3.5 text-blue-400" />
-              <span>Código QR</span>
-              <kbd className="px-1.5 py-0.2 bg-slate-900 border border-slate-700 rounded text-[9px] text-slate-400 font-mono">
-                Q
-              </kbd>
-            </button>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-1.5">
             <span className="flex items-center gap-1">
@@ -287,18 +309,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span>Código QR do Evento</span>
           </button>
 
-          {/* TECLA DE EDIÇÃO DE EVENTO APÓS CADASTRADO */}
+          {/* EDITAR EVENTO */}
           {onOpenEditEventModal && (
             <button
               onClick={() => onOpenEditEventModal(event)}
               className="px-3.5 py-2.5 bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-800/80 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors shadow-sm"
-              title="Tecla de Edição de Evento Cadastrado (Pressione 'E' no teclado ou clique aqui para editar Nome, Local, Horário, Vagas)"
+              title="Editar dados cadastrados deste evento (Nome, Local, Prato do Dia, Horário)"
             >
               <Pencil className="w-4 h-4 text-cyan-400" />
               <span>Editar Evento</span>
-              <span className="px-1.5 py-0.5 bg-cyan-900/60 border border-cyan-700/60 rounded text-[9px] font-mono text-cyan-200">
-                Tecla E
-              </span>
             </button>
           )}
 
@@ -311,17 +330,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span>Excluir / Gerenciar Eventos ({events.length})</span>
           </button>
 
-          {onDeleteEvent && (
-            <button
-              onClick={() => setIsDeleteEventConfirmOpen(true)}
-              className="px-3 py-2.5 bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800/80 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
-              title="Excluir este evento e seus participantes registrados do sistema"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-              <span>Excluir Evento Atual</span>
-            </button>
-          )}
-
           <button
             onClick={onOpenExcelPdfModal}
             className="px-3.5 py-2.5 bg-emerald-950/70 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-800/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors"
@@ -333,7 +341,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <button
             onClick={onOpenLayoutModal}
-            className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
             title="Personalizar Logotipo, Cores e Título da Aplicação"
           >
             <Palette className="w-3.5 h-3.5 text-indigo-400" />
@@ -359,10 +367,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
-        {/* Present in Venue */}
+        {/* PRESENTES */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
-          <div className="flex items-center justify-between text-xs text-emerald-400 font-medium">
-            <span>Presentes na Portaria</span>
+          <div className="flex items-center justify-between text-xs text-emerald-400 font-bold uppercase tracking-wider">
+            <span>PRESENTES</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-3xl font-extrabold font-mono text-emerald-400 tabular-nums">
@@ -374,18 +382,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
-        {/* Vagas Restantes */}
+        {/* AUSENTES */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
-          <div className="flex items-center justify-between text-xs text-cyan-400 font-medium">
-            <span>Vagas Disponíveis</span>
-            <ShieldCheck className="w-4 h-4 text-cyan-400" />
+          <div className="flex items-center justify-between text-xs text-amber-400 font-bold uppercase tracking-wider">
+            <span>AUSENTES</span>
+            <Clock className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-cyan-300 tabular-nums">
-            {remainingTotalSpots}
+          <div className="text-3xl font-extrabold font-mono text-amber-400 tabular-nums">
+            {absentCount}
           </div>
           <div className="text-[11px] text-slate-400 flex items-center justify-between">
-            <span>Ocupação Geral:</span>
-            <span className="font-mono text-cyan-400">{occupancyRate}%</span>
+            <span>Aguardando Entrada:</span>
+            <span className="font-mono text-amber-400 font-bold">{absentRate}%</span>
           </div>
         </div>
 
@@ -725,49 +733,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             if (onOpenEditEventModal) onOpenEditEventModal(evt);
           }}
         />
-      )}
-
-      {/* Delete Current Event Confirmation Modal */}
-      {isDeleteEventConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-rose-800/80 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl text-center">
-            <div className="w-14 h-14 mx-auto rounded-full bg-rose-950 border border-rose-600 flex items-center justify-center text-rose-400">
-              <Trash2 className="w-7 h-7" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white">Excluir Evento Atual</h3>
-              <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
-                Tem certeza de que deseja excluir o evento <strong>&quot;{event.title}&quot;</strong> do sistema?
-                {eventParticipants.length > 0 && (
-                  <span className="block mt-1 text-rose-400 font-semibold">
-                    {eventParticipants.length} participante(s) vinculados a este evento também serão excluídos.
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsDeleteEventConfirmOpen(false)}
-                className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (onDeleteEvent) {
-                    onDeleteEvent(event.id);
-                  }
-                  setIsDeleteEventConfirmOpen(false);
-                }}
-                className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold shadow-md shadow-rose-950"
-              >
-                Sim, Excluir Evento
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
